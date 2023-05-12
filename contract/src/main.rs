@@ -24,7 +24,7 @@ const ENTRY_POINT_RATE_MOVIE: &str = "rate_movie";
 #[no_mangle]
 pub extern "C" fn rate_movie() {
     let movie: String = runtime::get_named_arg(MOVIE_ARG_NAME);
-    let rating: String = runtime::get_named_arg(RATING_ARG_NAME);
+    let rating: u8 = runtime::get_named_arg(RATING_ARG_NAME);
 
     match runtime::get_key(&movie) {
         None => {

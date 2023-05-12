@@ -15,42 +15,31 @@ casper-client put-deploy \
   "jsonrpc": "2.0",
   "result": {
     "api_version": "1.4.15",
-    "deploy_hash": "d9c72a8322cb3b965d4e2b9dda1c6a87f3390ac7c0dea702f79c459e4e561769"
+    "deploy_hash": "4a0c14be7418475746de642b1ec3ca742acdc5924924ea99532682eb90404373"
   }
 }
 ```
 
 Contract hash:
 
-  hash-c986723cdb14a68b08eb1f14692cdb0dda200cdf7dc593562fabed11af30a1cd
+  hash-af2ae1f456caeeff599b6dc91eb280f7283de9cb7dcefe3aff523b0fcf65c889
 
 ---
-
 
 casper-client put-deploy \
     --node-address http://135.181.216.142:7777 \
     --chain-name casper-test \
-    --secret-key ../../wallets/02_celine/secret_key.pem \
+    --secret-key ~/Projects/casper/wallets/02_celine/secret_key.pem \
     --payment-amount 1600000000 \
-    --session-name "contract_hash" \
+    --session-hash af2ae1f456caeeff599b6dc91eb280f7283de9cb7dcefe3aff523b0fcf65c889 \
     --session-entry-point "rate_movie" \
     --session-arg "movie:string='dwunastu-gniewnych-ludzi'" \
-    --session-arg "rating:string='123.45'"
-
-
----
-casper-client put-deploy \
-    --node-address http://135.181.216.142:7777 \
-    --chain-name casper-test \
-    --secret-key ../../wallets/02_celine/secret_key.pem \
-    --payment-amount 1600000000 \
-    --session-package-hash 4b46d3354abb9adca29f9fb12830278e56bbb18b1a6c38ae53bbec0c55ddc967 \
-    --session-entry-point "rate_movie"
+    --session-arg "rating:u8='5'"
 {
-  "id": 633930579503232926,
+  "id": -3443966622980149090,
   "jsonrpc": "2.0",
   "result": {
     "api_version": "1.4.15",
-    "deploy_hash": "f2635a2d8e782ed7650d0c36a6b7f95b2e4d875301434ac16125a995aa8fbd69"
+    "deploy_hash": "2f3400738eac6e7772ff168e244c0cdb20e737a9a17ded544ea640add9b6efcf"
   }
 }
