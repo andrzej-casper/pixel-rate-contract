@@ -1,0 +1,56 @@
+= Contract for rating movies
+
+make build-contract
+
+casper-client put-deploy \
+    --node-address http://135.181.216.142:7777 \
+    --chain-name casper-test \
+    --secret-key ../../wallets/02_celine/secret_key.pem \
+    --payment-amount 17000000000 \
+    --session-path ./contract/target/wasm32-unknown-unknown/release/contract.wasm
+
+```
+{
+  "id": -1734952646104507097,
+  "jsonrpc": "2.0",
+  "result": {
+    "api_version": "1.4.15",
+    "deploy_hash": "d9c72a8322cb3b965d4e2b9dda1c6a87f3390ac7c0dea702f79c459e4e561769"
+  }
+}
+```
+
+Contract hash:
+
+  hash-c986723cdb14a68b08eb1f14692cdb0dda200cdf7dc593562fabed11af30a1cd
+
+---
+
+
+casper-client put-deploy \
+    --node-address http://135.181.216.142:7777 \
+    --chain-name casper-test \
+    --secret-key ../../wallets/02_celine/secret_key.pem \
+    --payment-amount 1600000000 \
+    --session-name "contract_hash" \
+    --session-entry-point "rate_movie" \
+    --session-arg "movie:string='dwunastu-gniewnych-ludzi'" \
+    --session-arg "rating:string='123.45'"
+
+
+---
+casper-client put-deploy \
+    --node-address http://135.181.216.142:7777 \
+    --chain-name casper-test \
+    --secret-key ../../wallets/02_celine/secret_key.pem \
+    --payment-amount 1600000000 \
+    --session-package-hash 4b46d3354abb9adca29f9fb12830278e56bbb18b1a6c38ae53bbec0c55ddc967 \
+    --session-entry-point "rate_movie"
+{
+  "id": 633930579503232926,
+  "jsonrpc": "2.0",
+  "result": {
+    "api_version": "1.4.15",
+    "deploy_hash": "f2635a2d8e782ed7650d0c36a6b7f95b2e4d875301434ac16125a995aa8fbd69"
+  }
+}
