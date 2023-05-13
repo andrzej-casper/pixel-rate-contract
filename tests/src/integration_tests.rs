@@ -16,9 +16,9 @@ mod tests {
     };
 
     const MY_ACCOUNT: [u8; 32] = [7u8; 32];
-    const CONTRACT_WASM: &str = "contract.wasm";
+    const CONTRACT_WASM: &str = "../../contract/target/wasm32-unknown-unknown/release/contract.wasm";
 
-    fn setup(named_key: &str) -> InMemoryWasmTestBuilder {
+    fn setup() -> InMemoryWasmTestBuilder {
         // Create keypair.
         let secret_key = SecretKey::ed25519_from_bytes(MY_ACCOUNT).unwrap();
         let public_key = PublicKey::from(&secret_key);
@@ -46,12 +46,7 @@ mod tests {
 
         // install contract.wasm
         let session_code = PathBuf::from(CONTRACT_WASM);
-        let empty_list: Vec<&str> = Vec::new();
-        let session_args = runtime_args! {
-            "movie" => named_key,
-            //"keys" => empty_list,
-            //"method" => String::from("add")
-        };
+        let session_args = runtime_args! {};
 
         let deploy_item = DeployItemBuilder::new()
             .with_empty_payment_bytes(runtime_args! {
@@ -76,23 +71,18 @@ mod tests {
     fn call_contract(
         builder: &mut InMemoryWasmTestBuilder,
         account_addr: AccountHash,
-        named_key: &str,
-        data: Vec<&str>,
-        method: &str,
+        movie: &str,
+        rating: u8,
     ) {
-        let session_code = PathBuf::from(CONTRACT_WASM);
-
         let session_args = runtime_args! {
-            "movie" => named_key,
-            //"keys" => data,
-            //"method" => String::from(method)
+            "movie" => movie,
+            "rating" => rating,
         };
-
         let deploy_item = DeployItemBuilder::new()
             .with_empty_payment_bytes(runtime_args! {
                 ARG_AMOUNT => *DEFAULT_PAYMENT
             })
-            .with_session_code(session_code, session_args)
+            .with_stored_session_named_key("contract_hash", "rate_movie", session_args)
             .with_authorization_keys(&[account_addr])
             .with_address(account_addr)
             .build();
@@ -101,442 +91,48 @@ mod tests {
         builder.exec(execute_request).commit().expect_success();
     }
 
-    fn call_contract_missing_parameter(
-        builder: &mut InMemoryWasmTestBuilder,
-        account_addr: AccountHash,
-        named_key: &str,
-        data: Vec<&str>,
-    ) {
-        let session_code = PathBuf::from(CONTRACT_WASM);
-
-        let session_args = runtime_args! {
-            //"named-key" => named_key,
-            //"keys" => data
-        };
-
-        let deploy_item = DeployItemBuilder::new()
-            .with_empty_payment_bytes(runtime_args! {
-                ARG_AMOUNT => *DEFAULT_PAYMENT
-            })
-            .with_session_code(session_code, session_args)
-            .with_authorization_keys(&[account_addr])
-            .with_address(account_addr)
-            .build();
-
-        let execute_request = ExecuteRequestBuilder::from_deploy_item(deploy_item).build();
-        builder.exec(execute_request).commit().expect_success();
-    }
     #[test]
-    fn should_create_named_keys() {
-        let named_key = "my-named-key";
-        let builder = setup(named_key);
-        let secret_key = SecretKey::ed25519_from_bytes(MY_ACCOUNT).unwrap();
-        let public_key = PublicKey::from(&secret_key);
+    fn should_add_non_existing_element() {
+       let secret_key = SecretKey::ed25519_from_bytes(MY_ACCOUNT).unwrap();
+       let public_key = PublicKey::from(&secret_key);
 
-        // Create an AccountHash from a public key.
-        let account_addr = AccountHash::from(&public_key);
+       // Create an AccountHash from a public key.
+       let account_addr = AccountHash::from(&public_key);
 
-        //get account
-        let account = builder
-            .query(None, Key::Account(account_addr), &[])
-            .expect("should query account")
-            .as_account()
-            .cloned()
-            .expect("should be account");
+       let mut builder = setup();
 
+       call_contract(&mut builder, account_addr, "the-godfather", 4 as u8);
+
+       //get account
+       let account = builder
+           .query(None, Key::Account(account_addr), &[])
+           .expect("should query account")
+           .as_account()
+           .cloned()
+           .expect("should be account");
+    
         let retvaluekey = *(account
             .named_keys()
-            .get(named_key)
+            .get("contract_hash")
             .expect("named key should exist"));
-        
+
         let retvalue = builder
             .query(None, retvaluekey, &[])
             .expect("Value should exist");
+        
+        let contract = retvalue.as_contract().unwrap();
+        let movie_map: Key = *contract.named_keys().get("the-godfather").expect("should have key");
 
-        // make assertions
-        let expected_output: Vec<&str> = Vec::new();
+        let account_addr_raw = base16::encode_lower(&account_addr.value());
+        let rating = builder.query_dictionary_item(None, *movie_map.as_uref().unwrap(), &account_addr_raw).unwrap();
+        let expected_output: u8 = 4;
         assert_eq!(
-            retvalue,
-            StoredValue::CLValue(CLValue::from_t(expected_output).unwrap()),
-            "Value should be empty"
+          rating,
+          StoredValue::CLValue(CLValue::from_t(expected_output).unwrap()),
+            "Should have valid rating"
         );
     }
 
-    #[test]
-    #[should_panic(expected = "ApiError::MissingArgument")]
-    fn should_panic_missing_parameters() {
-        let named_key = "my-named-key";
-        let mut builder = setup(named_key);
-        let secret_key = SecretKey::ed25519_from_bytes(MY_ACCOUNT).unwrap();
-        let public_key = PublicKey::from(&secret_key);
-
-        // Create an AccountHash from a public key.
-        let account_addr = AccountHash::from(&public_key);
-
-        let data: Vec<&str> = Vec::new();
-
-        call_contract_missing_parameter(&mut builder, account_addr, named_key, data);
-    }
-
-    //#[test]
-    //fn should_add_non_existing_element() {
-    //    let named_key = "my-named-key";
-    //    let secret_key = SecretKey::ed25519_from_bytes(MY_ACCOUNT).unwrap();
-    //    let public_key = PublicKey::from(&secret_key);
-
-    //    // Create an AccountHash from a public key.
-    //    let account_addr = AccountHash::from(&public_key);
-
-    //    let mut data: Vec<&str> = Vec::new();
-    //    data.push("TEST");
-
-    //    let mut builder = setup(named_key);
-
-    //    call_contract(&mut builder, account_addr, named_key, data, "add");
-
-    //    //get account
-    //    let account = builder
-    //        .query(None, Key::Account(account_addr), &[])
-    //        .expect("should query account")
-    //        .as_account()
-    //        .cloned()
-    //        .expect("should be account");
-
-    //    let retvaluekey = *(account
-    //        .named_keys()
-    //        .get(named_key)
-    //        .expect("named key should exist"));
-
-    //    let retvalue = builder
-    //        .query(None, retvaluekey, &[])
-    //        .expect("Value should exist");
-
-    //    //
-    //    // // make assertions
-    //    let mut expected_output: Vec<&str> = Vec::new();
-    //    expected_output.push("TEST");
-    //    assert_eq!(
-    //        retvalue,
-    //        StoredValue::CLValue(CLValue::from_t(expected_output).unwrap()),
-    //        "Should contain 1 element"
-    //    );
-    //}
-
-    //#[test]
-    //fn should_add_multiple_elements() {
-    //    let named_key = "my-named-key";
-    //    let secret_key = SecretKey::ed25519_from_bytes(MY_ACCOUNT).unwrap();
-    //    let public_key = PublicKey::from(&secret_key);
-
-    //    // Create an AccountHash from a public key.
-    //    let account_addr = AccountHash::from(&public_key);
-
-    //    let mut data: Vec<&str> = Vec::new();
-    //    data.push("ID1;VALUE");
-    //    data.push("ID2;VALUE");
-    //    data.push("ID3;VALUE");
-
-    //    let mut builder = setup(named_key);
-
-    //    call_contract(&mut builder, account_addr, named_key, data, "add");
-
-    //    //get account
-    //    let account = builder
-    //        .query(None, Key::Account(account_addr), &[])
-    //        .expect("should query account")
-    //        .as_account()
-    //        .cloned()
-    //        .expect("should be account");
-
-    //    let retvaluekey = *(account
-    //        .named_keys()
-    //        .get(named_key)
-    //        .expect("named key should exist"));
-
-    //    let retvalue = builder
-    //        .query(None, retvaluekey, &[])
-    //        .expect("Value should exist");
-
-    //    //
-    //    // // make assertions
-    //    let mut expected_output: Vec<&str> = Vec::new();
-    //    expected_output.push("ID1;VALUE");
-    //    expected_output.push("ID2;VALUE");
-    //    expected_output.push("ID3;VALUE");
-
-    //    assert_eq!(
-    //        retvalue,
-    //        StoredValue::CLValue(CLValue::from_t(expected_output).unwrap()),
-    //        "Should contain 3 elements"
-    //    );
-    //}
-
-    //#[test]
-    //fn should_update_existing_element() {
-    //    let named_key = "my-named-key";
-    //    let secret_key = SecretKey::ed25519_from_bytes(MY_ACCOUNT).unwrap();
-    //    let public_key = PublicKey::from(&secret_key);
-
-    //    // Create an AccountHash from a public key.
-    //    let account_addr = AccountHash::from(&public_key);
-
-    //    let mut data_call_one: Vec<&str> = Vec::new();
-    //    data_call_one.push("ID1;VALUE");
-
-    //    let mut builder = setup(named_key);
-
-    //    call_contract(&mut builder, account_addr, named_key, data_call_one, "add");
-
-    //    let mut data_call_two: Vec<&str> = Vec::new();
-    //    data_call_two.push("ID1;VALUE2");
-
-    //    call_contract(&mut builder, account_addr, named_key, data_call_two, "add");
-
-    //    //get account
-    //    let account = builder
-    //        .query(None, Key::Account(account_addr), &[])
-    //        .expect("should query account")
-    //        .as_account()
-    //        .cloned()
-    //        .expect("should be account");
-
-    //    let retvaluekey = *(account
-    //        .named_keys()
-    //        .get(named_key)
-    //        .expect("named key should exist"));
-
-    //    let retvalue = builder
-    //        .query(None, retvaluekey, &[])
-    //        .expect("Value should exist");
-
-    //    //
-    //    // // make assertions
-    //    let mut expected_output: Vec<&str> = Vec::new();
-    //    expected_output.push("ID1;VALUE2");
-    //    assert_eq!(
-    //        retvalue,
-    //        StoredValue::CLValue(CLValue::from_t(expected_output).unwrap()),
-    //        "Should be updated"
-    //    );
-    //}
-
-    //#[test]
-    //fn should_del_element() {
-    //    let named_key = "my-named-key";
-    //    let mut builder = setup(named_key);
-    //    let secret_key = SecretKey::ed25519_from_bytes(MY_ACCOUNT).unwrap();
-    //    let public_key = PublicKey::from(&secret_key);
-
-    //    // Create an AccountHash from a public key.
-    //    let account_addr = AccountHash::from(&public_key);
-
-    //    let mut data_to_add: Vec<&str> = Vec::new();
-    //    data_to_add.push("ID1;VALUE");
-    //    let mut data_to_remove: Vec<&str> = Vec::new();
-    //    data_to_remove.push("ID1;VALUE");
-    //    call_contract(&mut builder, account_addr, named_key, data_to_add, "add");
-    //    call_contract(&mut builder, account_addr, named_key, data_to_remove, "del");
-
-    //    //get account
-    //    let account = builder
-    //        .query(None, Key::Account(account_addr), &[])
-    //        .expect("should query account")
-    //        .as_account()
-    //        .cloned()
-    //        .expect("should be account");
-
-    //    let retvaluekey = *(account
-    //        .named_keys()
-    //        .get(named_key)
-    //        .expect("named key should exist"));
-
-    //    let retvalue = builder
-    //        .query(None, retvaluekey, &[])
-    //        .expect("Value should exist");
-
-    //    //
-    //    // // make assertions
-    //    let expected_output: Vec<&str> = Vec::new();
-    //    assert_eq!(
-    //        retvalue,
-    //        StoredValue::CLValue(CLValue::from_t(expected_output).unwrap()),
-    //        "Value should be empty"
-    //    );
-    //}
-
-    //#[test]
-    //fn should_del_multiple_elements() {
-    //    let named_key = "my-named-key";
-    //    let mut builder = setup(named_key);
-    //    let secret_key = SecretKey::ed25519_from_bytes(MY_ACCOUNT).unwrap();
-    //    let public_key = PublicKey::from(&secret_key);
-
-    //    // Create an AccountHash from a public key.
-    //    let account_addr = AccountHash::from(&public_key);
-
-    //    let mut data_to_add: Vec<&str> = Vec::new();
-    //    data_to_add.push("ID1;VALUE");
-    //    data_to_add.push("ID2;VALUE");
-    //    data_to_add.push("ID3;VALUE");
-    //    let mut data_to_remove: Vec<&str> = Vec::new();
-    //    data_to_remove.push("ID1;VALUE");
-    //    data_to_remove.push("ID2;VALUE");
-    //    // expected_output.push("ID3;VALUE");
-    //    call_contract(&mut builder, account_addr, named_key, data_to_add, "add");
-    //    call_contract(&mut builder, account_addr, named_key, data_to_remove, "del");
-
-    //    //get account
-    //    let account = builder
-    //        .query(None, Key::Account(account_addr), &[])
-    //        .expect("should query account")
-    //        .as_account()
-    //        .cloned()
-    //        .expect("should be account");
-
-    //    let retvaluekey = *(account
-    //        .named_keys()
-    //        .get(named_key)
-    //        .expect("named key should exist"));
-
-    //    let retvalue = builder
-    //        .query(None, retvaluekey, &[])
-    //        .expect("Value should exist");
-
-    //    //
-    //    // // make assertions
-    //    let mut expected_output: Vec<&str> = Vec::new();
-    //    expected_output.push("ID3;VALUE");
-    //    assert_eq!(
-    //        retvalue,
-    //        StoredValue::CLValue(CLValue::from_t(expected_output).unwrap()),
-    //        "Value should be empty"
-    //    );
-    //}
-
-    //#[test]
-    //fn should_not_del_element_non_existing_element() {
-    //    let named_key = "my-named-key";
-    //    let secret_key = SecretKey::ed25519_from_bytes(MY_ACCOUNT).unwrap();
-    //    let public_key = PublicKey::from(&secret_key);
-
-    //    // Create an AccountHash from a public key.
-    //    let account_addr = AccountHash::from(&public_key);
-
-    //    let mut data_call_one: Vec<&str> = Vec::new();
-    //    data_call_one.push("ID1;VALUE");
-
-    //    let mut builder = setup(named_key);
-
-    //    call_contract(&mut builder, account_addr, named_key, data_call_one, "add");
-
-    //    let mut data_call_two: Vec<&str> = Vec::new();
-    //    data_call_two.push("ID2;VALUE");
-
-    //    call_contract(&mut builder, account_addr, named_key, data_call_two, "del");
-
-    //    //get account
-    //    let account = builder
-    //        .query(None, Key::Account(account_addr), &[])
-    //        .expect("should query account")
-    //        .as_account()
-    //        .cloned()
-    //        .expect("should be account");
-
-    //    let retvaluekey = *(account
-    //        .named_keys()
-    //        .get(named_key)
-    //        .expect("named key should exist"));
-
-    //    let retvalue = builder
-    //        .query(None, retvaluekey, &[])
-    //        .expect("Value should exist");
-
-    //    //
-    //    // // make assertions
-    //    let mut expected_output: Vec<&str> = Vec::new();
-    //    expected_output.push("ID1;VALUE");
-    //    assert_eq!(
-    //        retvalue,
-    //        StoredValue::CLValue(CLValue::from_t(expected_output).unwrap()),
-    //        "Value should contain 1 element"
-    //    );
-    //}
-
-    //#[test]
-    //fn should_remove_all_elements() {
-    //    let named_key = "my-named-key";
-    //    let secret_key = SecretKey::ed25519_from_bytes(MY_ACCOUNT).unwrap();
-    //    let public_key = PublicKey::from(&secret_key);
-
-    //    // Create an AccountHash from a public key.
-    //    let account_addr = AccountHash::from(&public_key);
-
-    //    let mut data_call: Vec<&str> = Vec::new();
-    //    data_call.push("ID1;VALUE");
-    //    data_call.push("ID2;VALUE");
-
-    //    let mut builder = setup(named_key);
-
-    //    call_contract(&mut builder, account_addr, named_key, data_call, "add");
-
-    //    //get account
-    //    let account = builder
-    //        .query(None, Key::Account(account_addr), &[])
-    //        .expect("should query account")
-    //        .as_account()
-    //        .cloned()
-    //        .expect("should be account");
-
-    //    let retvaluekey = *(account
-    //        .named_keys()
-    //        .get(named_key)
-    //        .expect("named key should exist"));
-
-    //    let retvalue = builder
-    //        .query(None, retvaluekey, &[])
-    //        .expect("Value should exist");
-
-    //    //
-    //    // // make assertions
-    //    let mut expected_output: Vec<&str> = Vec::new();
-    //    expected_output.push("ID1;VALUE");
-    //    expected_output.push("ID2;VALUE");
-    //    assert_eq!(
-    //        retvalue,
-    //        StoredValue::CLValue(CLValue::from_t(expected_output).unwrap()),
-    //        "Value should contain 2 elements"
-    //    );
-
-    //    let data_call: Vec<&str> = Vec::new();
-
-    //    call_contract(&mut builder, account_addr, named_key, data_call, "delall");
-
-    //    //get account
-    //    let account = builder
-    //        .query(None, Key::Account(account_addr), &[])
-    //        .expect("should query account")
-    //        .as_account()
-    //        .cloned()
-    //        .expect("should be account");
-
-    //    let retvaluekey = *(account
-    //        .named_keys()
-    //        .get(named_key)
-    //        .expect("named key should exist"));
-
-    //    let retvalue = builder
-    //        .query(None, retvaluekey, &[])
-    //        .expect("Value should exist");
-
-    //    //
-    //    // // make assertions
-    //    let expected_output: Vec<&str> = Vec::new();
-    //    assert_eq!(
-    //        retvalue,
-    //        StoredValue::CLValue(CLValue::from_t(expected_output).unwrap()),
-    //        "Value should contain 0 elements"
-    //    );
-    //}
 }
 
 fn main() {
