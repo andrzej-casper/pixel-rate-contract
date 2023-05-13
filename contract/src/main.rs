@@ -37,7 +37,7 @@ pub extern "C" fn rate_movie() {
     };
 
     // Store corresponding account hash and given rating. 
-    let caller = runtime::get_caller().to_formatted_string();
+    let caller = base16::encode_lower(&runtime::get_caller().value());
     storage::dictionary_put(movie_map_uref, &caller, rating);
 }
 

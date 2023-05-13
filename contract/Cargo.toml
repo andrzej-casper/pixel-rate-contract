@@ -6,7 +6,7 @@ edition = "2018"
 [dependencies]
 casper-contract = "1.4.1"
 casper-types = "1.4.1"
-
+base16 = { version = "0.2.1", default-features = false }
 
 [[bin]]
 name = "contract"
