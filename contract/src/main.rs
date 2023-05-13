@@ -6,37 +6,39 @@ compile_error!("target arch should be wasm32: compile with '--target wasm32-unkn
 
 extern crate alloc;
 
-use alloc::{string::String, vec::Vec};
+use alloc::string::String;
+use alloc::vec;
 
 use casper_contract::{
     contract_api::{runtime, storage},
     unwrap_or_revert::UnwrapOrRevert,
 };
-use casper_types::{URef, EntryPoint, EntryPoints, EntryPointAccess, EntryPointType, CLType};
-use core::convert::TryInto;
-
-const MOVIE_ARG_NAME: &str = "movie";
-const RATING_ARG_NAME: &str = "rating";
+use casper_types::{URef, EntryPoint, EntryPoints, EntryPointAccess, EntryPointType, CLType, CLTyped, Parameter};
 
 const ENTRY_POINT_RATE_MOVIE: &str = "rate_movie";
+const MOVIE_ARG_NAME: &str = "movie";
+const RATING_ARG_NAME: &str = "rating";
 
 // Entry point that stores movie rating in named key.
 #[no_mangle]
 pub extern "C" fn rate_movie() {
+    // Parse arguments - movie name and rating.
     let movie: String = runtime::get_named_arg(MOVIE_ARG_NAME);
     let rating: u8 = runtime::get_named_arg(RATING_ARG_NAME);
 
-    match runtime::get_key(&movie) {
+    // Get or create map for particular movie.
+    let movie_map_uref: URef = match runtime::get_key(&movie) {
         None => {
-            let key = storage::new_uref(rating).into();
-            runtime::put_key(&movie, key);
+            storage::new_dictionary(&movie).unwrap_or_revert()
+        },
+        Some(k) => {
+            *k.as_uref().unwrap_or_revert()
         }
-        Some(_key) => {
-            //Get the URref of the named key
-            let key: URef = _key.try_into().unwrap_or_revert();
-            storage::write(key, rating);
-        }
-    }
+    };
+
+    // Store corresponding account hash and given rating. 
+    let caller = runtime::get_caller().to_formatted_string();
+    storage::dictionary_put(movie_map_uref, &caller, rating);
 }
 
 #[no_mangle]
@@ -45,10 +47,10 @@ pub extern "C" fn call() {
     let mut entry_points = EntryPoints::new();
     entry_points.add_entry_point(EntryPoint::new(
         ENTRY_POINT_RATE_MOVIE,
-        Vec::new(), // just info???
+        vec![Parameter::new(MOVIE_ARG_NAME, String::cl_type()), Parameter::new(RATING_ARG_NAME, u8::cl_type())], // Seems to be NOT validated, used only as guidance.
         CLType::Unit,
         EntryPointAccess::Public,
-        EntryPointType::Session,
+        EntryPointType::Contract, // We want to store data is contract context.
     ));
 
     // Install as non-upgradable contract.
