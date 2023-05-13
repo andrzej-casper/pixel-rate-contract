@@ -5,8 +5,8 @@ make build-contract
 casper-client put-deploy \
     --node-address http://135.181.216.142:7777 \
     --chain-name casper-test \
-    --secret-key ../../wallets/02_celine/secret_key.pem \
-    --payment-amount 17000000000 \
+    --secret-key ~/Projects/casper/wallets/02_celine/secret_key.pem \
+    --payment-amount 37000000000 \
     --session-path ./contract/target/wasm32-unknown-unknown/release/contract.wasm
 
 ```
@@ -15,14 +15,14 @@ casper-client put-deploy \
   "jsonrpc": "2.0",
   "result": {
     "api_version": "1.4.15",
-    "deploy_hash": "4a0c14be7418475746de642b1ec3ca742acdc5924924ea99532682eb90404373"
+    "deploy_hash": "fdf28a31c081b65674c51760d764fcbfc97f6ca13a1496873b8473fcb5fc1a2f"
   }
 }
 ```
 
 Contract hash:
 
-  hash-af2ae1f456caeeff599b6dc91eb280f7283de9cb7dcefe3aff523b0fcf65c889
+  hash-1c269b76c5618212a73b482e44c50c414c5bedc57ce0b687f7207307bc17657e
 
 ---
 
@@ -31,15 +31,15 @@ casper-client put-deploy \
     --chain-name casper-test \
     --secret-key ~/Projects/casper/wallets/02_celine/secret_key.pem \
     --payment-amount 1600000000 \
-    --session-hash af2ae1f456caeeff599b6dc91eb280f7283de9cb7dcefe3aff523b0fcf65c889 \
+    --session-hash 1c269b76c5618212a73b482e44c50c414c5bedc57ce0b687f7207307bc17657e \
     --session-entry-point "rate_movie" \
-    --session-arg "movie:string='dwunastu-gniewnych-ludzi'" \
-    --session-arg "rating:u8='5'"
+    --session-arg "movie:string='the-godfather'" \
+    --session-arg "rating:u8='4'"
 {
-  "id": -3443966622980149090,
+  "id": -1296089392065216587,
   "jsonrpc": "2.0",
   "result": {
     "api_version": "1.4.15",
-    "deploy_hash": "2f3400738eac6e7772ff168e244c0cdb20e737a9a17ded544ea640add9b6efcf"
+    "deploy_hash": "1790d4d63d8d86efbf78e2b84b0236eb62ac2aba3c6110fb76fc6c9a07e9c0df"
   }
 }
