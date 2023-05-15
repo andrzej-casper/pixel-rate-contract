@@ -13,7 +13,9 @@ use casper_contract::{
     contract_api::{runtime, storage},
     unwrap_or_revert::UnwrapOrRevert,
 };
-use casper_types::{URef, EntryPoint, EntryPoints, EntryPointAccess, EntryPointType, CLType, CLTyped, Parameter};
+use casper_types::{
+    CLType, CLTyped, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Parameter, URef,
+};
 
 const ENTRY_POINT_RATE_MOVIE: &str = "rate_movie";
 const MOVIE_ARG_NAME: &str = "movie";
@@ -28,15 +30,11 @@ pub extern "C" fn rate_movie() {
 
     // Get or create map for particular movie.
     let movie_map_uref: URef = match runtime::get_key(&movie) {
-        None => {
-            storage::new_dictionary(&movie).unwrap_or_revert()
-        },
-        Some(k) => {
-            *k.as_uref().unwrap_or_revert()
-        }
+        None => storage::new_dictionary(&movie).unwrap_or_revert(),
+        Some(k) => *k.as_uref().unwrap_or_revert(),
     };
 
-    // Store corresponding account hash and given rating. 
+    // Store corresponding account hash and given rating.
     let caller = base16::encode_lower(&runtime::get_caller().value());
     storage::dictionary_put(movie_map_uref, &caller, rating);
 }
@@ -47,7 +45,10 @@ pub extern "C" fn call() {
     let mut entry_points = EntryPoints::new();
     entry_points.add_entry_point(EntryPoint::new(
         ENTRY_POINT_RATE_MOVIE,
-        vec![Parameter::new(MOVIE_ARG_NAME, String::cl_type()), Parameter::new(RATING_ARG_NAME, u8::cl_type())], // Seems to be NOT validated, used only as guidance.
+        vec![
+            Parameter::new(MOVIE_ARG_NAME, String::cl_type()),
+            Parameter::new(RATING_ARG_NAME, u8::cl_type()),
+        ], // Seems to be NOT validated, used only as guidance.
         CLType::Unit,
         EntryPointAccess::Public,
         EntryPointType::Contract, // We want to store data is contract context.

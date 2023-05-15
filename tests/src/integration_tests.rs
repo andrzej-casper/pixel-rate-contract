@@ -16,7 +16,8 @@ mod tests {
     };
 
     const MY_ACCOUNT: [u8; 32] = [7u8; 32];
-    const CONTRACT_WASM: &str = "../../contract/target/wasm32-unknown-unknown/release/contract.wasm";
+    const CONTRACT_WASM: &str =
+        "../../contract/target/wasm32-unknown-unknown/release/contract.wasm";
 
     fn setup() -> InMemoryWasmTestBuilder {
         // Create keypair.
@@ -93,24 +94,24 @@ mod tests {
 
     #[test]
     fn should_add_non_existing_element() {
-       let secret_key = SecretKey::ed25519_from_bytes(MY_ACCOUNT).unwrap();
-       let public_key = PublicKey::from(&secret_key);
+        let secret_key = SecretKey::ed25519_from_bytes(MY_ACCOUNT).unwrap();
+        let public_key = PublicKey::from(&secret_key);
 
-       // Create an AccountHash from a public key.
-       let account_addr = AccountHash::from(&public_key);
+        // Create an AccountHash from a public key.
+        let account_addr = AccountHash::from(&public_key);
 
-       let mut builder = setup();
+        let mut builder = setup();
 
-       call_contract(&mut builder, account_addr, "the-godfather", 4 as u8);
+        call_contract(&mut builder, account_addr, "the-godfather", 4_u8);
 
-       //get account
-       let account = builder
-           .query(None, Key::Account(account_addr), &[])
-           .expect("should query account")
-           .as_account()
-           .cloned()
-           .expect("should be account");
-    
+        //get account
+        let account = builder
+            .query(None, Key::Account(account_addr), &[])
+            .expect("should query account")
+            .as_account()
+            .cloned()
+            .expect("should be account");
+
         let retvaluekey = *(account
             .named_keys()
             .get("contract_hash")
@@ -119,20 +120,24 @@ mod tests {
         let retvalue = builder
             .query(None, retvaluekey, &[])
             .expect("Value should exist");
-        
+
         let contract = retvalue.as_contract().unwrap();
-        let movie_map: Key = *contract.named_keys().get("the-godfather").expect("should have key");
+        let movie_map: Key = *contract
+            .named_keys()
+            .get("the-godfather")
+            .expect("should have key");
 
         let account_addr_raw = base16::encode_lower(&account_addr.value());
-        let rating = builder.query_dictionary_item(None, *movie_map.as_uref().unwrap(), &account_addr_raw).unwrap();
+        let rating = builder
+            .query_dictionary_item(None, *movie_map.as_uref().unwrap(), &account_addr_raw)
+            .unwrap();
         let expected_output: u8 = 4;
         assert_eq!(
-          rating,
-          StoredValue::CLValue(CLValue::from_t(expected_output).unwrap()),
+            rating,
+            StoredValue::CLValue(CLValue::from_t(expected_output).unwrap()),
             "Should have valid rating"
         );
     }
-
 }
 
 fn main() {
