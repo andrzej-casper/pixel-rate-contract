@@ -5,7 +5,6 @@ Smart contract used in https://github.com/andrzej-casper/pixel-rate[the PixelRat
 [NOTE]
 .Relevant testnet details
 ====
-
 * Contract deploy hash: https://testnet.cspr.live/deploy/aeb426723aa2caba3e1cee39ed7e310cbe052e9e22fd5559407152a374a14d97[aeb426723aa2caba3e1cee39ed7e310cbe052e9e22fd5559407152a374a14d97]
 * Contract package hash: https://testnet.cspr.live/contract-package/f9f9b8d9b4319af3bc0f15bbb74e73e9ca00951700db7e138cae970316985bf3[f9f9b8d9b4319af3bc0f15bbb74e73e9ca00951700db7e138cae970316985bf3]
 * Hash - version 1: https://testnet.cspr.live/contract/be3d58d00bfe1af1219addce925af80d68ca6bbfad3d00f36ed9cefa2ecc4266[be3d58d00bfe1af1219addce925af80d68ca6bbfad3d00f36ed9cefa2ecc4266]
