@@ -1,6 +1,53 @@
 = Contract for rating movies
 
-make build-contract
+Smart contract used in https://github.com/andrzej-casper/pixel-rate[the PixelRate application].
+
+== Requirements
+
+* rust
+* make
+* gcc
+
+== Building from source
+
+. Install WASM target:
++
+[source,bash]
+----
+$ rustup target add wasm32-unknown-unknown
+----
+
+. Run compilation:
++
+[source,bash]
+----
+$ make build-contract
+----
+
+
+You will find compiled smart contract at `./contract/target/wasm32-unknown-unknown/release/contract.wasm`.
+
+== Testing
+
+To run local test suite execute the following command:
+
+[source,bash]
+----
+$ make test
+----
+
+== Usage
+
+After you compiled this smart contract, it is time to deploy it to Casper network.
+
+In this example we will be:
+
+* Using *CLI client* to operate - it can be installed with `$ cargo install casper-client`.
+* Operating in test chain called *testnet* - specifed in `--chain-name` parameter.
+* Sending commands to the one of https://testnet.cspr.live/tools/peers[connected peers] - specified in `--node-address` argument.
+* Identify with *secret key* located under `~/wallels/07_alice`.
+
+== TODO - notes to cleanup
 
 casper-client put-deploy \
     --node-address http://135.181.216.142:7777 \
