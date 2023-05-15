@@ -48,53 +48,124 @@ $ make test
 
 After you compiled this smart contract, it is time to deploy it to Casper network.
 
+[IMPORTANT]
+====
 In this example we will be:
 
 * Using *CLI client* to operate - it can be installed with `$ cargo install casper-client`.
 * Operating in test chain called *testnet* - specifed in `--chain-name` parameter.
 * Sending commands to the one of https://testnet.cspr.live/tools/peers[connected peers] - specified in `--node-address` argument.
-* Identify with *secret key* located under `~/wallets/07_alice`.
+* Identify with *account keys* located under `~/wallets/07_alice/` - they were generated with `casper-client keygen [PATH]`.
+====
 
-== TODO - notes to cleanup
+. Deploying smart contract (cost: ~18 CSPR):
++
+[source,bash]
+----
+$ casper-client put-deploy \
+  --id 1 \
+  --node-address http://135.181.216.142:7777 \
+  --chain-name casper-test \
+  --secret-key ~/wallets/07_alice/secret_key.pem \
+  --payment-amount 18000000000 \
+  --session-path ./contract/target/wasm32-unknown-unknown/release/contract.wasm
+----
 
-casper-client put-deploy \
-    --node-address http://135.181.216.142:7777 \
-    --chain-name casper-test \
-    --secret-key ~/Projects/casper/wallets/02_celine/secret_key.pem \
-    --payment-amount 37000000000 \
-    --session-path ./contract/target/wasm32-unknown-unknown/release/contract.wasm
+. Getting contract hash:
++
+[TIP]
+====
+Make sure you have `jq` tool installed, as it will be used for JSON parsing. Otherwise you can supply values manually.
+====
++
+[source,bash]
+----
+$ STATE_ROOT_HASH=`casper-client get-state-root-hash \
+  --id 2 \
+  --node-address http://135.181.216.142:7777 \
+  | jq -r .result.state_root_hash`
+$ casper-client query-global-state \
+  --id 3 \
+  --node-address http://135.181.216.142:7777 \
+  --state-root-hash ${STATE_ROOT_HASH} \
+  --key ~/wallets/07_alice/public_key_hex \
+  | jq -r ".result.stored_value.Account.named_keys[] | select(.name == \"pixel_rate_contract_hash\") | .key"
+hash-be3d58d00bfe1af1219addce925af80d68ca6bbfad3d00f36ed9cefa2ecc4266
+----
 
-```
+. Calling contract - rate "The Godfather" movie with 4 stars (cost: ~0.5 CSPR).
++
+[NOTE]
+====
+We will call `rate_movie` entrypoint with 2 arguments:
+
+* movie (string): the-godfather
+* rating (u8): 4
+
+Make sure you supplied contract hash (from previous step) to `--session-hash` parameter, but remeber to strip `hash-` prefix.
+====
++
+[source,bash]
+----
+$ casper-client put-deploy \
+  --id 4 \
+  --node-address http://135.181.216.142:7777 \
+  --chain-name casper-test \
+  --secret-key ~/wallets/07_alice/secret_key.pem \
+  --payment-amount 500000000 \
+  --session-hash be3d58d00bfe1af1219addce925af80d68ca6bbfad3d00f36ed9cefa2ecc4266 \
+  --session-entry-point "rate_movie" \
+  --session-arg "movie:string='the-godfather'" \
+  --session-arg "rating:u8='4'"
 {
-  "id": -1734952646104507097,
   "jsonrpc": "2.0",
+  "id": 4,
   "result": {
     "api_version": "1.4.15",
-    "deploy_hash": "fdf28a31c081b65674c51760d764fcbfc97f6ca13a1496873b8473fcb5fc1a2f"
+    "deploy_hash": "6b45644df978fcb0ac1c07617b5f9333c3ae733fdf514e5dbbe44280f54d0645"
   }
 }
-```
+----
 
-Contract hash:
+. Verify that movie rating was stored:
++
+[NOTE]
+====
+Rating is stored in dictionary named as a movie, and where *key* is the account hash (raw hex, without prefix).
 
-  hash-1c269b76c5618212a73b482e44c50c414c5bedc57ce0b687f7207307bc17657e
-
----
-
-casper-client put-deploy \
-    --node-address http://135.181.216.142:7777 \
-    --chain-name casper-test \
-    --secret-key ~/Projects/casper/wallets/02_celine/secret_key.pem \
-    --payment-amount 1600000000 \
-    --session-hash 1c269b76c5618212a73b482e44c50c414c5bedc57ce0b687f7207307bc17657e \
-    --session-entry-point "rate_movie" \
-    --session-arg "movie:string='the-godfather'" \
-    --session-arg "rating:u8='4'"
+Make sure you supplied contract hash to `--contract-hash` parameter, along with `hash-` prefix.
+====
++
+[source,bash]
+----
+$ STATE_ROOT_HASH=`casper-client get-state-root-hash \
+  --id 5 \
+  --node-address http://135.181.216.142:7777 \
+  | jq -r .result.state_root_hash`
+$ ACCOUNT_HASH=`casper-client account-address --public-key ~/wallets/07_alice/public_key_hex | cut -d "-" -f3`
+$ casper-client get-dictionary-item \
+  --id 6 \
+  --node-address http://135.181.216.142:7777 \
+  --state-root-hash ${STATE_ROOT_HASH} \
+  --dictionary-name "the-godfather" \
+  --dictionary-item-key ${ACCOUNT_HASH} \
+  --contract-hash hash-be3d58d00bfe1af1219addce925af80d68ca6bbfad3d00f36ed9cefa2ecc4266
 {
-  "id": -1296089392065216587,
   "jsonrpc": "2.0",
+  "id": 6,
   "result": {
     "api_version": "1.4.15",
-    "deploy_hash": "1790d4d63d8d86efbf78e2b84b0236eb62ac2aba3c6110fb76fc6c9a07e9c0df"
+    "dictionary_key": "dictionary-ae0067c2603625565ce9cc4f32c10590326a97a3bb2b3f712e10a847e89de8f4",
+    "stored_value": {
+      "CLValue": {
+        "cl_type": "U8",
+        "bytes": "04",
+        "parsed": 4
+      }
+    },
+    "merkle_proof": "[38170 hex chars]"
   }
 }
+----
+
+As you can see in `.result.stored_value.parsed`, rating `4` was successfully stored.
