@@ -24,7 +24,6 @@ $ rustup target add wasm32-unknown-unknown
 $ make build-contract
 ----
 
-
 You will find compiled smart contract at `./contract/target/wasm32-unknown-unknown/release/contract.wasm`.
 
 == Testing
@@ -36,7 +35,7 @@ To run local test suite execute the following command:
 $ make test
 ----
 
-== Usage
+== Example usage
 
 After you compiled this smart contract, it is time to deploy it to Casper network.
 
@@ -45,7 +44,7 @@ In this example we will be:
 * Using *CLI client* to operate - it can be installed with `$ cargo install casper-client`.
 * Operating in test chain called *testnet* - specifed in `--chain-name` parameter.
 * Sending commands to the one of https://testnet.cspr.live/tools/peers[connected peers] - specified in `--node-address` argument.
-* Identify with *secret key* located under `~/wallels/07_alice`.
+* Identify with *secret key* located under `~/wallets/07_alice`.
 
 == TODO - notes to cleanup
 
