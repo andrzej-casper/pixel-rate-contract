@@ -17,11 +17,11 @@ use casper_types::{
     CLType, CLTyped, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Parameter, URef,
 };
 
+// Entry point that stores movie rating in named key.
 const ENTRY_POINT_RATE_MOVIE: &str = "rate_movie";
 const MOVIE_ARG_NAME: &str = "movie";
 const RATING_ARG_NAME: &str = "rating";
-
-// Entry point that stores movie rating in named key.
+//
 #[no_mangle]
 pub extern "C" fn rate_movie() {
     // Parse arguments - movie name and rating.
@@ -39,6 +39,9 @@ pub extern "C" fn rate_movie() {
     storage::dictionary_put(movie_map_uref, &caller, rating);
 }
 
+// Contract setup.
+const CONTRACT_HASH_KEY: &str = "contract_hash";
+//
 #[no_mangle]
 pub extern "C" fn call() {
     // Define entrypoints - one session code for rating movie.
@@ -58,5 +61,5 @@ pub extern "C" fn call() {
     let (contract_hash, _) = storage::new_locked_contract(entry_points, None, None, None);
 
     // Store a named key with the contract hash (under current account).
-    runtime::put_key("contract_hash", contract_hash.into());
+    runtime::put_key(CONTRACT_HASH_KEY, contract_hash.into());
 }
