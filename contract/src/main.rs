@@ -40,7 +40,7 @@ pub extern "C" fn rate_movie() {
 }
 
 // Contract setup.
-const CONTRACT_HASH_KEY: &str = "contract_hash";
+const CONTRACT_HASH_KEY: &str = "pixel_rate_contract_hash";
 //
 #[no_mangle]
 pub extern "C" fn call() {
